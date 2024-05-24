@@ -43,6 +43,14 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
   <script>
+    let featureExtractorSession;
+    let xgboostSession;
+
+    async function loadModels() {
+      featureExtractorSession = await ort.InferenceSession.create('feature_extractor.onnx');
+      xgboostSession = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_1000.onnx');
+    }
+
     async function runModel() {
       const imageUpload = document.getElementById('image-upload');
       const canvas = document.getElementById('canvas');
@@ -64,26 +72,20 @@
 
           try {
             // Load and run the feature extractor model
-            const session = await ort.InferenceSession.create('feature_extractor.onnx');
             const feeds = { input: inputTensor };
-            const results = await session.run(feeds);
+            const results = await featureExtractorSession.run(feeds);
 
             // Prepare tensor for XGBoost model
-            const tensorData = results[session.outputNames[0]].data;
+            const tensorData = results[featureExtractorSession.outputNames[0]].data;
             console.log('Feature Extractor Output:', tensorData);
             const tensor = new ort.Tensor('float32', tensorData, [1764, 1152]);
 
             // Load and run the XGBoost model
-            const sessionXGBoost = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_1000.onnx', {
-              executionProviders: ['wasm'],
-              graphOptimizationLevel: 'all',
-              intraOpNumThreads: 4
-            });
             const feedsXGBoost = { 'input': tensor };
-            const resultsXGBoost = await sessionXGBoost.run(feedsXGBoost);
+            const resultsXGBoost = await xgboostSession.run(feedsXGBoost);
 
             // Get and process the output
-            const output = resultsXGBoost[sessionXGBoost.outputNames[1]];
+            const output = resultsXGBoost[xgboostSession.outputNames[1]];
             // Extract and display the first channel
             displayOutput(output.data, 42, 42, 672, 672);
           } catch (error) {
@@ -172,7 +174,13 @@
         outputCtx.putImageData(imageData, 0, 0);
         }
 
-    runModel();
+    // Load models once
+    loadModels().then(() => {
+      runModel();
+    }).catch(error => {
+      console.error('Error loading models:', error);
+      document.getElementById('output').innerText = 'Error loading models: ' + error.message;
+    });
   </script>
 </body>
 </html>
