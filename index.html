@@ -159,7 +159,7 @@
             const originalY = Math.floor(y * originalHeight / height);
 
             const value = getValue(originalX, originalY);
-            const color = Math.min(Math.max(Math.round(value) * 255, 0), 255); // Normalize to [0, 255]
+            const color = Math.min(Math.max(value * 255, 0), 255); // Normalize to [0, 255]
 
             const index = (y * width + x) * 4;
             imageData.data[index] = color;
