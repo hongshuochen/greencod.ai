@@ -1,26 +1,43 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title>ONNX Runtime Web Example</title>
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
-  <meta charset="UTF-8">
+    <title>ONNX Runtime Web Example</title>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Responsive Web Design with Bootstrap</title>
     <!-- Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        #canvas, #output-canvas {
+        #canvas,
+        #output-canvas {
             width: 100%;
             height: auto;
         }
+
+        #drop-zone {
+            border: 2px dashed #007bff;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            color: #007bff;
+            cursor: pointer;
+        }
+
+        #drop-zone.dragover {
+            background-color: #e9ecef;
+        }
     </style>
 </head>
+
 <body>
     <div class="container mt-5">
         <div class="row">
             <div class="col-12 mb-3">
-                <label for="image-upload" class="form-label">Upload an Image</label>
-                <input type="file" id="image-upload" class="form-control-file" accept="image/*">
+                <label for="drop-zone" class="form-label">Upload an Image</label>
+                <div id="drop-zone">Drop an image here or click to upload</div>
+                <input type="file" id="image-upload" class="form-control-file d-none" accept="image/*">
             </div>
         </div>
         <div class="row">
@@ -34,153 +51,170 @@
             </div>
         </div>
         <p id="output"></p>
+        <p id="load_timing"></p>
+        <p id="run_timing"></p>
     </div>
-    
 
-  <!-- Bootstrap JS, Popper.js, and jQuery -->
-  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Bootstrap JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-  <script>
-    let featureExtractorSession;
-    let xgboostSession;
+    <script>
+        let featureExtractorSession;
+        let xgboostSession;
 
-    async function loadModels() {
-      featureExtractorSession = await ort.InferenceSession.create('feature_extractor.onnx');
-      xgboostSession = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_1000.onnx');
-    }
+        async function loadModels() {
+            const start = performance.now();
+            featureExtractorSession = await ort.InferenceSession.create('feature_extractor.onnx');
+            xgboostSession = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_1000.onnx');
+            const end = performance.now();
+            document.getElementById('load_timing').innerText = `Models loaded in ${(end - start).toFixed(2)} ms`;
+        }
 
-    async function runModel() {
-      const imageUpload = document.getElementById('image-upload');
-      const canvas = document.getElementById('canvas');
-      const outputCanvas = document.getElementById('output-canvas');
-      const ctx = canvas.getContext('2d');
-      const outputCtx = outputCanvas.getContext('2d');
+        async function runModel(imageFile) {
+            const canvas = document.getElementById('canvas');
+            const outputCanvas = document.getElementById('output-canvas');
+            const ctx = canvas.getContext('2d');
+            const outputCtx = outputCanvas.getContext('2d');
+            const img = new Image();
 
-      imageUpload.onchange = async (event) => {
-        const imageFile = event.target.files[0];
-        const img = new Image();
+            img.onload = async () => {
+                const start = performance.now();
+                // Display input image
+                canvas.width = 672;
+                canvas.height = 672;
+                ctx.drawImage(img, 0, 0, 672, 672);
 
-        img.onload = async () => {
-          canvas.width = 672;
-          canvas.height = 672;
-          ctx.drawImage(img, 0, 0, 672, 672);
+                const imageData = ctx.getImageData(0, 0, 672, 672);
+                const inputTensor = preprocessImage(imageData);
+                const endPreprocess = performance.now();
 
-          const imageData = ctx.getImageData(0, 0, 672, 672);
-          const inputTensor = preprocessImage(imageData);
+                try {
+                    const feeds = { input: inputTensor };
+                    const results = await featureExtractorSession.run(feeds);
+                    const tensorData = results[featureExtractorSession.outputNames[0]].data;
+                    const tensor = new ort.Tensor('float32', tensorData, [1764, 1152]);
 
-          try {
-            // Load and run the feature extractor model
-            const feeds = { input: inputTensor };
-            const results = await featureExtractorSession.run(feeds);
+                    const feedsXGBoost = { 'input': tensor };
+                    const resultsXGBoost = await xgboostSession.run(feedsXGBoost);
 
-            // Prepare tensor for XGBoost model
-            const tensorData = results[featureExtractorSession.outputNames[0]].data;
-            console.log('Feature Extractor Output:', tensorData);
-            const tensor = new ort.Tensor('float32', tensorData, [1764, 1152]);
+                    const output = resultsXGBoost[xgboostSession.outputNames[1]];
+                    displayOutput(output.data, 42, 42, 672, 672);
+                    const end = performance.now();
+                    document.getElementById('run_timing').innerText = `Image processed in ${(end - start).toFixed(2)} ms (Preprocessing: ${(endPreprocess - start).toFixed(2)} ms)`;
+                } catch (error) {
+                    console.error('Error running the model:', error);
+                    document.getElementById('output').innerText = 'Error running the model: ' + error.message;
+                }
+            };
 
-            // Load and run the XGBoost model
-            const feedsXGBoost = { 'input': tensor };
-            const resultsXGBoost = await xgboostSession.run(feedsXGBoost);
+            img.src = URL.createObjectURL(imageFile);
+        }
 
-            // Get and process the output
-            const output = resultsXGBoost[xgboostSession.outputNames[1]];
-            // Extract and display the first channel
-            displayOutput(output.data, 42, 42, 672, 672);
-          } catch (error) {
-            console.error('Error running the model:', error);
-            document.getElementById('output').innerText = 'Error running the model: ' + error.message;
-          }
-        };
+        function preprocessImage(imageData) {
+            const { data, width, height } = imageData;
+            const input = new Float32Array(width * height * 3);
 
-        img.src = URL.createObjectURL(imageFile);
-      };
-    }
-
-    function preprocessImage(imageData) {
-      const { data, width, height } = imageData;
-      const input = new Float32Array(width * height * 3);
-
-      for (let c = 0; c < 3; c++) {
-        for (let h = 0; h < height; h++) {
-          for (let w = 0; w < width; w++) {
-            const index = h * width + w;
-            const offset = index * 4;
-            if (c === 0) {
-              input[c * width * height + index] = (data[offset] / 255.0 - 0.485) / 0.229;
-            } else if (c === 1) {
-              input[c * width * height + index] = (data[offset + 1] / 255.0 - 0.456) / 0.224;
-            } else if (c === 2) {
-              input[c * width * height + index] = (data[offset + 2] / 255.0 - 0.406) / 0.225;
+            for (let c = 0; c < 3; c++) {
+                for (let h = 0; h < height; h++) {
+                    for (let w = 0; w < width; w++) {
+                        const index = h * width + w;
+                        const offset = index * 4;
+                        if (c === 0) {
+                            input[c * width * height + index] = (data[offset] / 255.0 - 0.485) / 0.229;
+                        } else if (c === 1) {
+                            input[c * width * height + index] = (data[offset + 1] / 255.0 - 0.456) / 0.224;
+                        } else if (c === 2) {
+                            input[c * width * height + index] = (data[offset + 2] / 255.0 - 0.406) / 0.225;
+                        }
+                    }
+                }
             }
-          }
-        }
-      }
 
-      return new ort.Tensor('float32', input, [1, 3, width, height]);
-    }
-
-    // function displayOutput(data, width, height) {
-    //   const outputCanvas = document.getElementById('output-canvas');
-    //   outputCanvas.width = width;
-    //   outputCanvas.height = height;
-    //   const outputCtx = outputCanvas.getContext('2d');
-    //   const imageData = outputCtx.createImageData(width, height);
-
-    //   for (let i = 0; i < width * height; i++) {
-    //     const value = data[i*2+1]; // Directly use the value
-    //     const color = Math.min(Math.max(value * 255, 0), 255); // Normalize to [0, 255]
-
-    //     imageData.data[i * 4] = color;
-    //     imageData.data[i * 4 + 1] = color;
-    //     imageData.data[i * 4 + 2] = color;
-    //     imageData.data[i * 4 + 3] = 255; // Fully opaque
-    //   }
-
-    //   outputCtx.putImageData(imageData, 0, 0);
-    // }
-
-    function displayOutput(data, originalWidth, originalHeight, width, height) {
-        const outputCanvas = document.getElementById('output-canvas');
-        outputCanvas.width = width;
-        outputCanvas.height = height;
-        const outputCtx = outputCanvas.getContext('2d');
-        const imageData = outputCtx.createImageData(width, height);
-
-        // Helper function to get value from original data
-        function getValue(x, y) {
-            const index = y * originalWidth + x;
-            return data[index * 2 + 1]; // Assuming the value you need is the second element in each pair
+            return new ort.Tensor('float32', input, [1, 3, width, height]);
         }
 
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-            // Compute the coordinates in the original data
-            const originalX = Math.floor(x * originalWidth / width);
-            const originalY = Math.floor(y * originalHeight / height);
+        function displayOutput(data, originalWidth, originalHeight, width, height) {
+            const outputCanvas = document.getElementById('output-canvas');
+            outputCanvas.width = width;
+            outputCanvas.height = height;
+            const outputCtx = outputCanvas.getContext('2d');
+            const imageData = outputCtx.createImageData(width, height);
 
-            const value = getValue(originalX, originalY);
-            const color = Math.min(Math.max(value * 255, 0), 255); // Normalize to [0, 255]
-
-            const index = (y * width + x) * 4;
-            imageData.data[index] = color;
-            imageData.data[index + 1] = color;
-            imageData.data[index + 2] = color;
-            imageData.data[index + 3] = 255; // Fully opaque
+            function getValue(x, y) {
+                const index = y * originalWidth + x;
+                return data[index * 2 + 1];
             }
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const originalX = Math.floor(x * originalWidth / width);
+                    const originalY = Math.floor(y * originalHeight / height);
+
+                    const value = getValue(originalX, originalY);
+                    const color = Math.min(Math.max(value * 255, 0), 255);
+
+                    const index = (y * width + x) * 4;
+                    imageData.data[index] = color;
+                    imageData.data[index + 1] = color;
+                    imageData.data[index + 2] = color;
+                    imageData.data[index + 3] = 255;
+                }
+            }
+
+            outputCtx.putImageData(imageData, 0, 0);
         }
 
-        outputCtx.putImageData(imageData, 0, 0);
+        function initDropZone() {
+            const dropZone = document.getElementById('drop-zone');
+            const imageUpload = document.getElementById('image-upload');
+
+            dropZone.addEventListener('click', () => {
+                imageUpload.click();
+            });
+
+            dropZone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dropZone.classList.remove('dragover');
+                const files = event.dataTransfer.files;
+                if (files.length > 0) {
+                    runModel(files[0]);
+                }
+            });
+
+            imageUpload.addEventListener('change', (event) => {
+                const files = event.target.files;
+                if (files.length > 0) {
+                    runModel(files[0]);
+                }
+            });
         }
 
-    // Load models once
-    loadModels().then(() => {
-      runModel();
-    }).catch(error => {
-      console.error('Error loading models:', error);
-      document.getElementById('output').innerText = 'Error loading models: ' + error.message;
-    });
-  </script>
+        async function loadExampleImage() {
+            const response = await fetch('dog.jpg'); // Replace with the actual path to your example image
+            const blob = await response.blob();
+            const file = new File([blob], 'example.jpg', { type: 'image/jpeg' });
+            runModel(file);
+        }
+
+        loadModels().then(() => {
+            initDropZone();
+            loadExampleImage();
+        }).catch(error => {
+            console.error('Error loading models:', error);
+            document.getElementById('output').innerText = 'Error loading models: ' + error.message;
+        });
+    </script>
 </body>
+
 </html>
