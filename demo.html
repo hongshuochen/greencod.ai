@@ -52,8 +52,8 @@
             <span>Research by USC MCL & ARL</span>
         </div>
         <div>
-            <a href="#">Home</a>
-            <a href="#">Demo</a>
+            <a href="/">Home</a>
+            <a href="/demo">Demo</a>
             <a href="#">Dataset</a>
             <a href="#">Blog</a>
             <a href="#">Paper</a>
@@ -111,7 +111,7 @@
             xgboostSession4 = await ort.InferenceSession.create('models/xgboost_model_EfficientNetB4_672_42_42_84_168_1000.onnx');
             concatSession1 = await ort.InferenceSession.create('models/concat_features_19_42_42.onnx');
             concatSession2 = await ort.InferenceSession.create('models/concat_features_19_42_84.onnx');
-            concatSession3 = await ort.InferenceSession.create('models/sconcat_features_19_84_168.onnx');
+            concatSession3 = await ort.InferenceSession.create('models/concat_features_19_84_168.onnx');
             const end = performance.now();
             document.getElementById('load_timing').innerText = `Models loaded in ${(end - start).toFixed(2)} ms`;
             document.getElementById('loading-spinner').style.display = 'none';
