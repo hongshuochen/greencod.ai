@@ -129,7 +129,7 @@ nav a.github-icon img {
     gap: 20px;
 }
 .gif-container img {
-    height: 400px;
+    width: 75%;
 }
 .logos-section {
     padding: 50px 20px;
