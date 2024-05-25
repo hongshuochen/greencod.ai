@@ -1,305 +1,237 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>ONNX Runtime Web Example</title>
-    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsive Web Design with Bootstrap</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>GreenCOD</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        #canvas,
-        #output-canvas {
-            width: 100%;
-            height: auto;
-            display: none;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
         }
-
-        #drop-zone {
-            border: 2px dashed #007bff;
-            border-radius: 5px;
-            padding: 20px;
+        .hero-section {
+            position: relative;
+            height: 100vh;
+            background: url('https://images.cloudflareapps.com/EJzyxsCCQOeRa71a83tX_background-2.jpeg') no-repeat center center/cover;
+            color: white;
             text-align: center;
-            color: #007bff;
-            cursor: pointer;
-            display: none;
-        }
-
-        #drop-zone.dragover {
-            background-color: #e9ecef;
-        }
-
-        #loading-spinner {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
         }
-
-        .spinner-border {
-            width: 3rem;
-            height: 3rem;
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            padding: 20px 30px;
+        }
+        .hero-content h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .hero-content p {
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+        .hero-content a {
+            color: white;
+            background: #007bff;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        nav {
+            background: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        nav a {
+            color: black;
+            margin: 0 10px;
+            text-decoration: none;
+        }
+        nav a.github-icon img {
+            width: 20px;
+            height: 20px;
+        }
+        @media (min-width: 768px) {
+            .hero-content h1 {
+                font-size: 3rem;
+            }
+            .hero-content p {
+                font-size: 1.2rem;
+            }
+            .hero-content {
+                padding: 40px 60px;
+            }
+        }
+        .abstract-section {
+            padding: 50px 20px;
+            text-align: center;
+            background-color: #ffffff;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        .abstract-section p {
+            padding: 0 20px;
+        }
+        .gif-section {
+            padding: 50px 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+        .applications-section {
+            padding: 50px 20px;
+            text-align: center;
+            background-color: #ffffff;
+        }
+        .citation-section {
+            padding: 50px 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+        .abstract-section h2, .gif-section h2, .applications-section h2, .citation-section h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+        }
+        .abstract-section p, .gif-section p, .applications-section p, .citation-section p {
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background: #000;
+        }
+        .video-container iframe,
+        .video-container object,
+        .video-container embed {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .gif-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .gif-container img {
+            height: 400px;
+        }
+        .logos-section {
+            padding: 50px 20px;
+            text-align: center;
+            background-color: #ffffff;
+        }
+        .logos-section img {
+            height: 100px;
+            margin: 0 20px;
+        }
+        .applications-section img {
+            width: 80%;
+            height: auto;
+            margin: 10px 0;
         }
     </style>
 </head>
-
 <body>
-    <div id="loading-spinner">
-        <div class="spinner-border text-primary" role="status">
-            <span class="sr-only">Loading...</span>
+    <nav>
+        <div>
+            <a href="#" class="navbar-brand">GreenCOD</a>
+            <span>Research by USC MCL & ARL</span>
         </div>
-        <p>Loading models...</p>
-    </div>
+        <div>
+            <a href="index.html">Home</a>
+            <a href="demo.html">Demo</a>
+            <a href="#">Dataset</a>
+            <a href="#">Blog</a>
+            <a href="#">Paper</a>
+            <a href="#" class="github-icon"><img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub"></a>
+        </div>
+    </nav>
+
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>Green Camouflaged Object Detection (GreenCOD) <br> A Green AI Model for Mobile from USC Media Communications Lab</h1>
+            <p>GreenCOD is a cutting-edge Green AI model designed to detect camouflaged objects on mobile devices, leveraging green technology for efficient performance.  <br> 
+                This innovative approach utilizes gradient boosting and pre-trained DNN features, eliminating the need for backpropagation and reducing computational demands.</p>
+            <p>Authors: Hong-Shuo Chen, Yao Zhu, Suya You, Azad M. Madni, C.-C. Jay Kuo</p>
+            <a href="demo.html">Try the demo</a>
+        </div>
+    </section>
+
+    <section class="abstract-section">
+        <h2>Abstract</h2>
+        <p>
+            We introduce GreenCOD, a green method for detecting camouflaged objects, distinct in its avoidance of backpropagation techniques. GreenCOD leverages gradient boosting and deep features extracted from pre-trained Deep Neural
+            Networks (DNNs). Traditional camouflaged object detection (COD) approaches often rely on complex deep neural network architectures, seeking performance improvements through backpropagation-based fine-tuning. However, such
+            methods are typically computationally demanding and exhibit only marginal performance variations across different models. This raises the question of whether effective training can be achieved without backpropagation. Addressing
+            this, our work proposes a new paradigm that utilizes gradient boosting for COD. This approach significantly simplifies the model design, resulting in a system that requires fewer parameters and operations and maintains high performance
+            compared to state-of-the-art deep learning models. Remarkably, our models are trained without backpropagation and achieve the best performance with fewer than 20G Multiply-Accumulate Operations (MACs). This new, more efficient
+            paradigm opens avenues for further exploration in green, backpropagation-free model training.
+        </p>
+    </section>
+
+    <section class="gif-section">
+        <h2>GreenCOD Detection Results</h2>
+        <p>Check out these example results showing GreenCOD's performance.</p>
+        <div class="gif-container">
+            <img src="https://hongshuochen.com/GreenCOD/results_large_3s.gif" alt="GreenCOD detection result - large">
+            <img src="https://hongshuochen.com/GreenCOD/results_small_3s.gif" alt="GreenCOD detection result - small">
+        </div>
+    </section>
+
+    <section class="applications-section">
+        <h2>Applications</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <h3>Medical Imaging</h3>
+                <p>GreenCOD can be trained on various datasets for different AI systems. For example, applying it to medical imaging, a challenging task, could be highly beneficial, especially if it can run efficiently on mobile devices.</p>
+                <img src="Tissue-1-1.jpeg" alt="Medical imaging application example 1" class="img-fluid" style="width:30%; height:auto;">
+                <img src="Tissue-1-2.png" alt="Medical imaging application example 2" class="img-fluid" style="width:30%; height:auto;">
+            </div>
+            <div class="col-md-6">
+                <h3>Rescue in Earthquake Areas</h3>
+                <p>In earthquake rescue operations, GreenCOD can detect camouflaged objects like trapped victims. Running efficiently on mobile devices, it provides real-time data to first responders, improving response times. Integrating with drones, it offers comprehensive situational awareness, enhancing coordinated rescue efforts and potentially saving lives.
+                </p>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e5/Kahramanmara%C5%9F_after_7.8_magnitude_earthquake_in_T%C3%BCrkiye_5.jpg" 
+                alt="Rescue in earthquake areas application" class="img-fluid" style="width:50%; height:auto;">
+            </div>
+        </div>
+    </section>
     
-    <div class="container mt-5" style="display: none;" id="main-content">
-        <div class="row">
-            <div class="col-12 mb-3">
-                <label for="drop-zone" class="form-label">Select an Image</label>
-                <div id="drop-zone">Drop an image here or click to select</div>
-                <input type="file" id="image-upload" class="form-control-file d-none" accept="image/*">
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="canvas">Input Image</label>
-                <canvas id="canvas"></canvas>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="output-canvas">Output</label>
-                <canvas id="output-canvas"></canvas>
-            </div>
-        </div>
-        <p id="output"></p>
-        <p id="load_timing"></p>
-        <p id="run_timing"></p>
-    </div>
 
-    <!-- Bootstrap JS, Popper.js, and jQuery -->
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <section class="citation-section">
+        <h2>Citations</h2>
+        <p>If you use GreenCOD in your research, please cite the following paper:</p>
+        <p>Hong-Shuo Chen, Yao Zhu, Suya You, Azad M. Madni, and C.-C. Jay Kuo, "Green Camouflaged Object Detection (GreenCOD)," 2024.</p>
+    </section>
 
-    <script>
-        let featureExtractorSession;
-        let xgboostSession1;
-        let xgboostSession2;
-        let concatSession1;
-
-        async function loadModels() {
-            const start = performance.now();
-            featureExtractorSession = await ort.InferenceSession.create('feature_extractor.onnx');
-            xgboostSession1 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_1000.onnx');
-            xgboostSession2 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_42_1000.onnx');
-            xgboostSession3 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_42_84_1000.onnx');
-            xgboostSession4 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_42_84_168_1000.onnx');
-            concatSession1 = await ort.InferenceSession.create('concat_features_19_42_42.onnx');
-            concatSession2 = await ort.InferenceSession.create('concat_features_19_42_84.onnx');
-            concatSession3 = await ort.InferenceSession.create('concat_features_19_84_168.onnx');
-            const end = performance.now();
-            document.getElementById('load_timing').innerText = `Models loaded in ${(end - start).toFixed(2)} ms`;
-            document.getElementById('loading-spinner').style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
-            document.getElementById('drop-zone').style.display = 'block';
-        }
-
-        async function runModel(imageFile) {
-            const canvas = document.getElementById('canvas');
-            const outputCanvas = document.getElementById('output-canvas');
-            const ctx = canvas.getContext('2d');
-            const outputCtx = outputCanvas.getContext('2d');
-            const img = new Image();
-
-            img.onload = async () => {
-                const start = performance.now();
-                // Display input image
-                canvas.style.display = 'block';
-                outputCanvas.style.display = 'block';
-                canvas.width = 672;
-                canvas.height = 672;
-                ctx.drawImage(img, 0, 0, 672, 672);
-
-                const imageData = ctx.getImageData(0, 0, 672, 672);
-                const inputTensor = preprocessImage(imageData);
-                const endPreprocess = performance.now();
-                document.getElementById('run_timing').innerText = `Preprocessing: ${(endPreprocess - start).toFixed(2)} ms`;
-                
-                try {
-                    const startPreprocessing = performance.now();
-                    const feeds = { input: inputTensor };
-                    const results = await featureExtractorSession.run(feeds);
-                    const tensorData1 = results[featureExtractorSession.outputNames[0]].data;
-                    const tensorData2 = results[featureExtractorSession.outputNames[1]].data;
-                    const tensorData3 = results[featureExtractorSession.outputNames[2]].data;
-                    const tensor1 = new ort.Tensor('float32', tensorData1, [42*42, 1152]);
-                    const tensor2 = new ort.Tensor('float32', tensorData2, [84*84, 1152]);
-                    const tensor3 = new ort.Tensor('float32', tensorData3, [168*168, 1152]);
-                    document.getElementById('run_timing').innerText += `\nEfficientNetB4: ${(performance.now() - startPreprocessing).toFixed(2)} ms`;
-                    
-                    const startXGboost1 = performance.now();
-                    const feedsXGBoost1 = { 'input': tensor1 };
-                    const resultsXGBoost1 = await xgboostSession1.run(feedsXGBoost1);
-
-                    const outputXGBoost1 = resultsXGBoost1[xgboostSession1.outputNames[1]];
-                    document.getElementById('run_timing').innerText += `\nXGBoost1 (42x42): ${(performance.now() - startXGboost1).toFixed(2)} ms`;
-
-                    const feedsConcat1 = { 'features': tensor1, "y_prev_pred": outputXGBoost1};
-                    const resultsConcat1 = await concatSession1.run(feedsConcat1);
-
-                    const concatOutput1 = resultsConcat1[concatSession1.outputNames[0]];
-
-                    const startXGboost2 = performance.now();
-                    const feedsXGBoost2 = { 'input': concatOutput1 };
-                    const resultsXGBoost2 = await xgboostSession2.run(feedsXGBoost2);
-
-                    const outputXGBoost2 = resultsXGBoost2[xgboostSession2.outputNames[1]];
-                    document.getElementById('run_timing').innerText += `\nXGBoost2 (42x42): ${(performance.now() - startXGboost2).toFixed(2)} ms`;
-
-                    const feedsConcat2 = { 'features': tensor2, "y_prev_pred": outputXGBoost2};
-                    const resultsConcat2 = await concatSession2.run(feedsConcat2);
-
-                    const concatOutput2 = resultsConcat2[concatSession2.outputNames[0]];
-
-                    const startXGboost3 = performance.now();
-                    const feedsXGBoost3 = { 'input': concatOutput2 };
-                    const resultsXGBoost3 = await xgboostSession3.run(feedsXGBoost3);
-                    console.log(resultsXGBoost3)
-                    
-                    const outputXGBoost3 = resultsXGBoost3[xgboostSession3.outputNames[1]];
-                    document.getElementById('run_timing').innerText += `\nXGBoost3 (84x84): ${(performance.now() - startXGboost3).toFixed(2)} ms`;
-
-                    const feedsConcat3 = { 'features': tensor3, "y_prev_pred": outputXGBoost3};
-                    const resultsConcat3 = await concatSession3.run(feedsConcat3);
-
-                    const concatOutput3 = resultsConcat3[concatSession3.outputNames[0]];
-
-                    const startXGboost4 = performance.now();
-                    const feedsXGBoost4 = { 'input': concatOutput3 };
-                    const resultsXGBoost4 = await xgboostSession4.run(feedsXGBoost4);
-                    console.log(resultsXGBoost3)
-                    
-                    const output = resultsXGBoost4[xgboostSession4.outputNames[1]];
-                    document.getElementById('run_timing').innerText += `\nXGBoost4 (168x168): ${(performance.now() - startXGboost4).toFixed(2)} ms`;
-                    
-                    const end = performance.now();
-
-                    displayOutput(output.data, 168, 168, 672, 672);
-
-                    document.getElementById('run_timing').innerText += `\nTotal processed in ${(end - start).toFixed(2)} ms`;
-                } catch (error) {
-                    console.error('Error running the model:', error);
-                    document.getElementById('output').innerText = 'Error running the model: ' + error.message;
-                }
-            };
-
-            img.src = URL.createObjectURL(imageFile);
-        }
-
-        function preprocessImage(imageData) {
-            const { data, width, height } = imageData;
-            const input = new Float32Array(width * height * 3);
-
-            for (let c = 0; c < 3; c++) {
-                for (let h = 0; h < height; h++) {
-                    for (let w = 0; w < width; w++) {
-                        const index = h * width + w;
-                        const offset = index * 4;
-                        if (c === 0) {
-                            input[c * width * height + index] = (data[offset] / 255.0 - 0.485) / 0.229;
-                        } else if (c === 1) {
-                            input[c * width * height + index] = (data[offset + 1] / 255.0 - 0.456) / 0.224;
-                        } else if (c === 2) {
-                            input[c * width * height + index] = (data[offset + 2] / 255.0 - 0.406) / 0.225;
-                        }
-                    }
-                }
-            }
-
-            return new ort.Tensor('float32', input, [1, 3, width, height]);
-        }
-
-        function displayOutput(data, originalWidth, originalHeight, width, height) {
-            const outputCanvas = document.getElementById('output-canvas');
-            outputCanvas.width = width;
-            outputCanvas.height = height;
-            const outputCtx = outputCanvas.getContext('2d');
-            const imageData = outputCtx.createImageData(width, height);
-
-            function getValue(x, y) {
-                const index = y * originalWidth + x;
-                return data[index * 2 + 1];
-            }
-
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const originalX = Math.floor(x * originalWidth / width);
-                    const originalY = Math.floor(y * originalHeight / height);
-
-                    const value = getValue(originalX, originalY);
-                    const color = Math.min(Math.max(value * 255, 0), 255);
-
-                    const index = (y * width + x) * 4;
-                    imageData.data[index] = color;
-                    imageData.data[index + 1] = color;
-                    imageData.data[index + 2] = color;
-                    imageData.data[index + 3] = 255;
-                }
-            }
-
-            outputCtx.putImageData(imageData, 0, 0);
-        }
-
-        function initDropZone() {
-            const dropZone = document.getElementById('drop-zone');
-            const imageUpload = document.getElementById('image-upload');
-
-            dropZone.addEventListener('click', () => {
-                imageUpload.click();
-            });
-
-            dropZone.addEventListener('dragover', (event) => {
-                event.preventDefault();
-                dropZone.classList.add('dragover');
-            });
-
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('dragover');
-            });
-
-            dropZone.addEventListener('drop', (event) => {
-                event.preventDefault();
-                dropZone.classList.remove('dragover');
-                const files = event.dataTransfer.files;
-                if (files.length > 0) {
-                    runModel(files[0]);
-                }
-            });
-
-            imageUpload.addEventListener('change', (event) => {
-                const files = event.target.files;
-                if (files.length > 0) {
-                    runModel(files[0]);
-                }
-            });
-        }
-
-        async function loadExampleImage() {
-            const response = await fetch('dog.jpg'); // Replace with the actual path to your example image
-            const blob = await response.blob();
-            const file = new File([blob], 'example.jpg', { type: 'image/jpeg' });
-            runModel(file);
-        }
-
-        loadModels().then(() => {
-            initDropZone();
-            loadExampleImage();
-        }).catch(error => {
-            console.error('Error loading models:', error);
-            document.getElementById('output').innerText = 'Error loading models: ' + error.message;
-        });
-    </script>
+    <section class="logos-section">
+        <h2>Sponsered By</h2>
+        <img src="https://viterbischool.usc.edu/wp-content/uploads/2021/04/Main-USC-Viterbi-Logo-480x160-1.png" alt="MCL Logo">
+        <img src="data:image/png;base64,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" alt="ARL Logo">
+    </section>
 </body>
-
 </html>
