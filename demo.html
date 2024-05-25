@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ONNX Runtime Web Example</title>
+    <title>GreenCOD Demo</title>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <title>Responsive Web Design with Bootstrap</title>
     <!-- Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         #canvas,
         #output-canvas {
@@ -104,13 +105,13 @@
         async function loadModels() {
             const start = performance.now();
             featureExtractorSession = await ort.InferenceSession.create('feature_extractor.onnx');
-            xgboostSession1 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_1000.onnx');
-            xgboostSession2 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_42_1000.onnx');
-            xgboostSession3 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_42_84_1000.onnx');
-            xgboostSession4 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_42_84_168_1000.onnx');
-            concatSession1 = await ort.InferenceSession.create('concat_features_19_42_42.onnx');
-            concatSession2 = await ort.InferenceSession.create('concat_features_19_42_84.onnx');
-            concatSession3 = await ort.InferenceSession.create('concat_features_19_84_168.onnx');
+            xgboostSession1 = await ort.InferenceSession.create('models/xgboost_model_EfficientNetB4_672_42_1000.onnx');
+            xgboostSession2 = await ort.InferenceSession.create('models/xgboost_model_EfficientNetB4_672_42_42_1000.onnx');
+            xgboostSession3 = await ort.InferenceSession.create('models/xgboost_model_EfficientNetB4_672_42_42_84_1000.onnx');
+            xgboostSession4 = await ort.InferenceSession.create('models/xgboost_model_EfficientNetB4_672_42_42_84_168_1000.onnx');
+            concatSession1 = await ort.InferenceSession.create('models/concat_features_19_42_42.onnx');
+            concatSession2 = await ort.InferenceSession.create('models/concat_features_19_42_84.onnx');
+            concatSession3 = await ort.InferenceSession.create('models/sconcat_features_19_84_168.onnx');
             const end = performance.now();
             document.getElementById('load_timing').innerText = `Models loaded in ${(end - start).toFixed(2)} ms`;
             document.getElementById('loading-spinner').style.display = 'none';
