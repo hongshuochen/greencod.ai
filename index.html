@@ -14,6 +14,7 @@
         #output-canvas {
             width: 100%;
             height: auto;
+            display: none;
         }
 
         #drop-zone {
@@ -23,20 +24,41 @@
             text-align: center;
             color: #007bff;
             cursor: pointer;
+            display: none;
         }
 
         #drop-zone.dragover {
             background-color: #e9ecef;
         }
+
+        #loading-spinner {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container mt-5">
+    <div id="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <p>Loading models...</p>
+    </div>
+    
+    <div class="container mt-5" style="display: none;" id="main-content">
         <div class="row">
             <div class="col-12 mb-3">
-                <label for="drop-zone" class="form-label">Upload an Image</label>
-                <div id="drop-zone">Drop an image here or click to upload</div>
+                <label for="drop-zone" class="form-label">Select an Image</label>
+                <div id="drop-zone">Drop an image here or click to select</div>
                 <input type="file" id="image-upload" class="form-control-file d-none" accept="image/*">
             </div>
         </div>
@@ -62,14 +84,25 @@
 
     <script>
         let featureExtractorSession;
-        let xgboostSession;
+        let xgboostSession1;
+        let xgboostSession2;
+        let concatSession1;
 
         async function loadModels() {
             const start = performance.now();
             featureExtractorSession = await ort.InferenceSession.create('feature_extractor.onnx');
-            xgboostSession = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_1000.onnx');
+            xgboostSession1 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_1000.onnx');
+            xgboostSession2 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_42_1000.onnx');
+            xgboostSession3 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_42_84_1000.onnx');
+            xgboostSession4 = await ort.InferenceSession.create('xgboost_model_EfficientNetB4_672_42_42_84_168_1000.onnx');
+            concatSession1 = await ort.InferenceSession.create('concat_features_19_42_42.onnx');
+            concatSession2 = await ort.InferenceSession.create('concat_features_19_42_84.onnx');
+            concatSession3 = await ort.InferenceSession.create('concat_features_19_84_168.onnx');
             const end = performance.now();
             document.getElementById('load_timing').innerText = `Models loaded in ${(end - start).toFixed(2)} ms`;
+            document.getElementById('loading-spinner').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            document.getElementById('drop-zone').style.display = 'block';
         }
 
         async function runModel(imageFile) {
@@ -82,6 +115,8 @@
             img.onload = async () => {
                 const start = performance.now();
                 // Display input image
+                canvas.style.display = 'block';
+                outputCanvas.style.display = 'block';
                 canvas.width = 672;
                 canvas.height = 672;
                 ctx.drawImage(img, 0, 0, 672, 672);
@@ -89,20 +124,70 @@
                 const imageData = ctx.getImageData(0, 0, 672, 672);
                 const inputTensor = preprocessImage(imageData);
                 const endPreprocess = performance.now();
-
+                document.getElementById('run_timing').innerText = `Preprocessing: ${(endPreprocess - start).toFixed(2)} ms`;
+                
                 try {
+                    const startPreprocessing = performance.now();
                     const feeds = { input: inputTensor };
                     const results = await featureExtractorSession.run(feeds);
-                    const tensorData = results[featureExtractorSession.outputNames[0]].data;
-                    const tensor = new ort.Tensor('float32', tensorData, [1764, 1152]);
+                    const tensorData1 = results[featureExtractorSession.outputNames[0]].data;
+                    const tensorData2 = results[featureExtractorSession.outputNames[1]].data;
+                    const tensorData3 = results[featureExtractorSession.outputNames[2]].data;
+                    const tensor1 = new ort.Tensor('float32', tensorData1, [42*42, 1152]);
+                    const tensor2 = new ort.Tensor('float32', tensorData2, [84*84, 1152]);
+                    const tensor3 = new ort.Tensor('float32', tensorData3, [168*168, 1152]);
+                    document.getElementById('run_timing').innerText += `\nEfficientNetB4: ${(performance.now() - startPreprocessing).toFixed(2)} ms`;
+                    
+                    const startXGboost1 = performance.now();
+                    const feedsXGBoost1 = { 'input': tensor1 };
+                    const resultsXGBoost1 = await xgboostSession1.run(feedsXGBoost1);
 
-                    const feedsXGBoost = { 'input': tensor };
-                    const resultsXGBoost = await xgboostSession.run(feedsXGBoost);
+                    const outputXGBoost1 = resultsXGBoost1[xgboostSession1.outputNames[1]];
+                    document.getElementById('run_timing').innerText += `\nXGBoost1 (42x42): ${(performance.now() - startXGboost1).toFixed(2)} ms`;
 
-                    const output = resultsXGBoost[xgboostSession.outputNames[1]];
-                    displayOutput(output.data, 42, 42, 672, 672);
+                    const feedsConcat1 = { 'features': tensor1, "y_prev_pred": outputXGBoost1};
+                    const resultsConcat1 = await concatSession1.run(feedsConcat1);
+
+                    const concatOutput1 = resultsConcat1[concatSession1.outputNames[0]];
+
+                    const startXGboost2 = performance.now();
+                    const feedsXGBoost2 = { 'input': concatOutput1 };
+                    const resultsXGBoost2 = await xgboostSession2.run(feedsXGBoost2);
+
+                    const outputXGBoost2 = resultsXGBoost2[xgboostSession2.outputNames[1]];
+                    document.getElementById('run_timing').innerText += `\nXGBoost2 (42x42): ${(performance.now() - startXGboost2).toFixed(2)} ms`;
+
+                    const feedsConcat2 = { 'features': tensor2, "y_prev_pred": outputXGBoost2};
+                    const resultsConcat2 = await concatSession2.run(feedsConcat2);
+
+                    const concatOutput2 = resultsConcat2[concatSession2.outputNames[0]];
+
+                    const startXGboost3 = performance.now();
+                    const feedsXGBoost3 = { 'input': concatOutput2 };
+                    const resultsXGBoost3 = await xgboostSession3.run(feedsXGBoost3);
+                    console.log(resultsXGBoost3)
+                    
+                    const outputXGBoost3 = resultsXGBoost3[xgboostSession3.outputNames[1]];
+                    document.getElementById('run_timing').innerText += `\nXGBoost3 (84x84): ${(performance.now() - startXGboost3).toFixed(2)} ms`;
+
+                    const feedsConcat3 = { 'features': tensor3, "y_prev_pred": outputXGBoost3};
+                    const resultsConcat3 = await concatSession3.run(feedsConcat3);
+
+                    const concatOutput3 = resultsConcat3[concatSession3.outputNames[0]];
+
+                    const startXGboost4 = performance.now();
+                    const feedsXGBoost4 = { 'input': concatOutput3 };
+                    const resultsXGBoost4 = await xgboostSession4.run(feedsXGBoost4);
+                    console.log(resultsXGBoost3)
+                    
+                    const output = resultsXGBoost4[xgboostSession4.outputNames[1]];
+                    document.getElementById('run_timing').innerText += `\nXGBoost4 (168x168): ${(performance.now() - startXGboost4).toFixed(2)} ms`;
+                    
                     const end = performance.now();
-                    document.getElementById('run_timing').innerText = `Image processed in ${(end - start).toFixed(2)} ms (Preprocessing: ${(endPreprocess - start).toFixed(2)} ms)`;
+
+                    displayOutput(output.data, 168, 168, 672, 672);
+
+                    document.getElementById('run_timing').innerText += `\nTotal processed in ${(end - start).toFixed(2)} ms`;
                 } catch (error) {
                     console.error('Error running the model:', error);
                     document.getElementById('output').innerText = 'Error running the model: ' + error.message;
