@@ -139,7 +139,7 @@
                 const imageData = ctx.getImageData(0, 0, 672, 672);
                 const inputTensor = preprocessImage(imageData);
                 const endPreprocess = performance.now();
-                document.getElementById('run_timing').innerText = `Preprocessing: ${(endPreprocess - start).toFixed(2)} ms in CPU`;
+                document.getElementById('run_timing').innerText = `Preprocessing: ${(endPreprocess - start).toFixed(2)} ms on CPU`;
                 
                 try {
                     const startPreprocessing = performance.now();
@@ -151,14 +151,14 @@
                     const tensor1 = new ort.Tensor('float32', tensorData1, [42*42, 1152]);
                     const tensor2 = new ort.Tensor('float32', tensorData2, [84*84, 1152]);
                     const tensor3 = new ort.Tensor('float32', tensorData3, [168*168, 1152]);
-                    document.getElementById('run_timing').innerText += `\nEfficientNetB4: ${(performance.now() - startPreprocessing).toFixed(2)} ms in CPU`;
+                    document.getElementById('run_timing').innerText += `\nEfficientNetB4: ${(performance.now() - startPreprocessing).toFixed(2)} ms on CPU`;
                     
                     const startXGboost1 = performance.now();
                     const feedsXGBoost1 = { 'input': tensor1 };
                     const resultsXGBoost1 = await xgboostSession1.run(feedsXGBoost1);
 
                     const outputXGBoost1 = resultsXGBoost1[xgboostSession1.outputNames[1]];
-                    document.getElementById('run_timing').innerText += `\nXGBoost1 (42x42): ${(performance.now() - startXGboost1).toFixed(2)} ms in CPU`;
+                    document.getElementById('run_timing').innerText += `\nXGBoost1 (42x42): ${(performance.now() - startXGboost1).toFixed(2)} ms on CPU`;
 
                     const feedsConcat1 = { 'features': tensor1, "y_prev_pred": outputXGBoost1};
                     const resultsConcat1 = await concatSession1.run(feedsConcat1);
@@ -170,7 +170,7 @@
                     const resultsXGBoost2 = await xgboostSession2.run(feedsXGBoost2);
 
                     const outputXGBoost2 = resultsXGBoost2[xgboostSession2.outputNames[1]];
-                    document.getElementById('run_timing').innerText += `\nXGBoost2 (42x42): ${(performance.now() - startXGboost2).toFixed(2)} ms in CPU`;
+                    document.getElementById('run_timing').innerText += `\nXGBoost2 (42x42): ${(performance.now() - startXGboost2).toFixed(2)} ms on CPU`;
 
                     const feedsConcat2 = { 'features': tensor2, "y_prev_pred": outputXGBoost2};
                     const resultsConcat2 = await concatSession2.run(feedsConcat2);
@@ -183,7 +183,7 @@
                     console.log(resultsXGBoost3)
                     
                     const outputXGBoost3 = resultsXGBoost3[xgboostSession3.outputNames[1]];
-                    document.getElementById('run_timing').innerText += `\nXGBoost3 (84x84): ${(performance.now() - startXGboost3).toFixed(2)} ms in CPU`;
+                    document.getElementById('run_timing').innerText += `\nXGBoost3 (84x84): ${(performance.now() - startXGboost3).toFixed(2)} ms on CPU`;
 
                     const feedsConcat3 = { 'features': tensor3, "y_prev_pred": outputXGBoost3};
                     const resultsConcat3 = await concatSession3.run(feedsConcat3);
@@ -196,13 +196,13 @@
                     console.log(resultsXGBoost3)
                     
                     const output = resultsXGBoost4[xgboostSession4.outputNames[1]];
-                    document.getElementById('run_timing').innerText += `\nXGBoost4 (168x168): ${(performance.now() - startXGboost4).toFixed(2)} ms in CPU`;
+                    document.getElementById('run_timing').innerText += `\nXGBoost4 (168x168): ${(performance.now() - startXGboost4).toFixed(2)} ms on CPU`;
                     
                     const end = performance.now();
 
                     displayOutput(output.data, 168, 168, 672, 672);
 
-                    document.getElementById('run_timing').innerText += `\nTotal processed in ${(end - start).toFixed(2)} ms in CPU`;
+                    document.getElementById('run_timing').innerText += `\nTotal processed in ${(end - start).toFixed(2)} ms on CPU`;
                 } catch (error) {
                     console.error('Error running the model:', error);
                     document.getElementById('output').innerText = 'Error running the model: ' + error.message;
