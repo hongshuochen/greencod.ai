@@ -145,3 +145,10 @@ nav a.github-icon img {
     height: auto;
     margin: 10px 0;
 }
+.bibtex {
+    background-color: #f8f8f8;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: monospace;
+}
