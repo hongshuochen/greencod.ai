@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenCOD Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        #drop-zone {
+            border: 2px dashed #007bff;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            color: #007bff;
+            cursor: pointer;
+            display: none;
+        }
+
+        #drop-zone.dragover {
+            background-color: #e9ecef;
+        }
+
+        #loading-spinner {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        #results-table {
+            display: none;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        #results-table th, #results-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        #results-table th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+
+        #results-table td.index,
+        #results-table td.filename,
+        #results-table td.time {
+            width: 10%;
+        }
+
+        #results-table td.image,
+        #results-table td.output {
+            width: 35%;
+            text-align: center;
+        }
+
+        #results-table img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: auto;
+        }
+        
+        #progress-bar {
+            display: none;
+            margin-top: 20px;
+            height: 10px;
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        #progress-bar::-webkit-progress-bar {
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        #progress-bar::-webkit-progress-value {
+            background: #007bff;
+            border-radius: 5px;
+        }
+
+        #progress-bar::-moz-progress-bar {
+            background: #007bff;
+            border-radius: 5px;
+        }
+
+        #progress-bar {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #download-button {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #progress-info {
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div>
+            <a href="#" class="navbar-brand">GreenCOD</a>
+            <span>Research by USC MCL & ARL</span>
+        </div>
+        <div>
+            <a href="https://greencod.ai">Home</a>
+            <a href="/demo">Demo</a>
+            <a href="#">Dataset</a>
+            <a href="#">Blog</a>
+            <a href="https://www.arxiv.org/abs/2405.16144">Paper</a>
+            <a href="#" class="github-icon"><img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub"></a>
+        </div>
+    </nav>
+
+    <div id="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <p>Loading models...</p>
+    </div>
+    
+    <div class="container mt-5" style="display: none;" id="main-content">
+        <div class="row">
+            <div class="col-12 mb-3">
+                <label for="drop-zone" class="form-label">Select Folder (It will be processed locally on your device and not uploaded).</label>
+                <div id="drop-zone">Drop a folder here or click to select</div>
+                <input type="file" id="folder-upload" class="form-control-file d-none" webkitdirectory directory multiple>
+            </div>
+        </div>
+        <p id="load_timing"></p>
+        <progress id="progress-bar" value="0" max="100" style="width: 100%;"></progress>
+        <div id="progress-info"></div>
+        <button id="download-button" class="btn btn-primary">Download All Predictions</button>
+        <table id="results-table" class="table table-striped">
+            <thead>
+                <tr>
+                    <th class="index">#</th>
+                    <th class="filename">Filename</th>
+                    <th class="image">Input Image</th>
+                    <th class="output">Output Image</th>
+                    <th class="time">Processing Time (ms) in CPU</th>
+                </tr>
+            </thead>
+            <tbody id="results-body">
+            </tbody>
+        </table>
+        <p id="output"></p>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        let featureExtractorSession;
+        let xgboostSession1;
+        let xgboostSession2;
+        let xgboostSession3;
+        let xgboostSession4;
+        let concatSession1;
+        let concatSession2;
+        let concatSession3;
+        let fileIndex = 1;
+        const zip = new JSZip();
+        const predictionsFolder = zip.folder("predictions");
+
+        async function loadModels() {
+            const start = performance.now();
+            featureExtractorSession = await ort.InferenceSession.create('models/feature_extractor.onnx');
+            xgboostSession1 = await ort.InferenceSession.create('models/xgboost_model_EfficientNetB4_672_42_1000.onnx');
+            xgboostSession2 = await ort.InferenceSession.create('models/xgboost_model_EfficientNetB4_672_42_42_1000.onnx');
+            xgboostSession3 = await ort.InferenceSession.create('models/xgboost_model_EfficientNetB4_672_42_42_84_1000.onnx');
+            xgboostSession4 = await ort.InferenceSession.create('models/xgboost_model_EfficientNetB4_672_42_42_84_168_1000.onnx');
+            concatSession1 = await ort.InferenceSession.create('models/concat_features_19_42_42.onnx');
+            concatSession2 = await ort.InferenceSession.create('models/concat_features_19_42_84.onnx');
+            concatSession3 = await ort.InferenceSession.create('models/concat_features_19_84_168.onnx');
+            resizeSession = await ort.InferenceSession.create('models/resize_model.onnx');
+            const end = performance.now();
+            document.getElementById('load_timing').innerText = `Models loaded in ${(end - start).toFixed(2)} ms`;
+            document.getElementById('loading-spinner').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            document.getElementById('drop-zone').style.display = 'block';
+        }
+
+        async function runModel(imageFile, totalFiles) {
+            const start = performance.now();
+            const imageURL = URL.createObjectURL(imageFile);
+            const img = new Image();
+            img.src = imageURL;
+
+            await new Promise((resolve) => {
+                img.onload = resolve;
+            });
+            
+            const originalHeight = img.height;
+            const originalWidth = img.width;
+            const H = new ort.Tensor('int64', [img.height], [1]);
+            const W = new ort.Tensor('int64', [img.width], [1]);
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 672;
+            canvas.height = 672;
+            ctx.drawImage(img, 0, 0, 672, 672);
+            const imageData = ctx.getImageData(0, 0, 672, 672);
+            const inputTensor = preprocessImage(imageData);
+
+            const feeds = { input: inputTensor };
+            const results = await featureExtractorSession.run(feeds);
+            const tensorData1 = results[featureExtractorSession.outputNames[0]].data;
+            const tensorData2 = results[featureExtractorSession.outputNames[1]].data;
+            const tensorData3 = results[featureExtractorSession.outputNames[2]].data;
+            const tensor1 = new ort.Tensor('float32', tensorData1, [42*42, 1152]);
+            const tensor2 = new ort.Tensor('float32', tensorData2, [84*84, 1152]);
+            const tensor3 = new ort.Tensor('float32', tensorData3, [168*168, 1152]);
+
+            const feedsXGBoost1 = { 'input': tensor1 };
+            const resultsXGBoost1 = await xgboostSession1.run(feedsXGBoost1);
+            const outputXGBoost1 = resultsXGBoost1[xgboostSession1.outputNames[1]];
+
+            const feedsConcat1 = { 'features': tensor1, "y_prev_pred": outputXGBoost1};
+            const resultsConcat1 = await concatSession1.run(feedsConcat1);
+            const concatOutput1 = resultsConcat1[concatSession1.outputNames[0]];
+
+            const feedsXGBoost2 = { 'input': concatOutput1 };
+            const resultsXGBoost2 = await xgboostSession2.run(feedsXGBoost2);
+            const outputXGBoost2 = resultsXGBoost2[xgboostSession2.outputNames[1]];
+
+            const feedsConcat2 = { 'features': tensor2, "y_prev_pred": outputXGBoost2};
+            const resultsConcat2 = await concatSession2.run(feedsConcat2);
+            const concatOutput2 = resultsConcat2[concatSession2.outputNames[0]];
+
+            const feedsXGBoost3 = { 'input': concatOutput2 };
+            const resultsXGBoost3 = await xgboostSession3.run(feedsXGBoost3);
+            const outputXGBoost3 = resultsXGBoost3[xgboostSession3.outputNames[1]];
+
+            const feedsConcat3 = { 'features': tensor3, "y_prev_pred": outputXGBoost3};
+            const resultsConcat3 = await concatSession3.run(feedsConcat3);
+            const concatOutput3 = resultsConcat3[concatSession3.outputNames[0]];
+
+            const feedsXGBoost4 = { 'input': concatOutput3 };
+            const resultsXGBoost4 = await xgboostSession4.run(feedsXGBoost4);
+            const outputXGBoost4 = resultsXGBoost4[xgboostSession4.outputNames[1]];
+            
+            const feedsResize = { y: outputXGBoost4, H: H, W: W };
+            const resultsResize = await resizeSession.run(feedsResize);
+            const output = resultsResize[resizeSession.outputNames[0]];
+
+            const end = performance.now();
+
+            const outputCanvas = document.createElement('canvas');
+            const outputCtx = outputCanvas.getContext('2d');
+            outputCanvas.width = originalWidth;
+            outputCanvas.height = originalHeight;
+            const imageDataOutput = outputCtx.createImageData(originalWidth, originalHeight);
+
+            function getValue(x, y) {
+                const index = y * originalWidth + x;
+                return output.data[index];
+            }
+
+            for (let y = 0; y < originalHeight; y++) {
+                for (let x = 0; x < originalWidth; x++) {
+                    const value = getValue(x, y);
+                    const color = Math.min(Math.max(value * 255, 0), 255);
+                    const index = (y * originalWidth + x) * 4;
+                    imageDataOutput.data[index] = color;
+                    imageDataOutput.data[index + 1] = color;
+                    imageDataOutput.data[index + 2] = color;
+                    imageDataOutput.data[index + 3] = 255;
+                }
+            }
+
+            outputCtx.putImageData(imageDataOutput, 0, 0);
+            const outputDataURL = outputCanvas.toDataURL();
+            displayResult(imageFile.name, imageURL, outputDataURL, (end - start).toFixed(2));
+            predictionsFolder.file(imageFile.name.replace(/\.[^/.]+$/, "") + "_prediction.png", outputDataURL.split(',')[1], {base64: true});
+
+            return end - start;
+        }
+
+        function preprocessImage(imageData) {
+            const { data, width, height } = imageData;
+            const input = new Float32Array(width * height * 3);
+
+            for (let c = 0; c < 3; c++) {
+                for (let h = 0; h < height; h++) {
+                    for (let w = 0; w < width; w++) {
+                        const index = h * width + w;
+                        const offset = index * 4;
+                        if (c === 0) {
+                            input[c * width * height + index] = (data[offset] / 255.0 - 0.485) / 0.229;
+                        } else if (c === 1) {
+                            input[c * width * height + index] = (data[offset + 1] / 255.0 - 0.456) / 0.224;
+                        } else if (c === 2) {
+                            input[c * width * height + index] = (data[offset + 2] / 255.0 - 0.406) / 0.225;
+                        }
+                    }
+                }
+            }
+
+            return new ort.Tensor('float32', input, [1, 3, width, height]);
+        }
+
+        function displayResult(filename, inputImageSrc, outputImageSrc, processingTime) {
+            const resultsBody = document.getElementById('results-body');
+            const row = document.createElement('tr');
+
+            const indexCell = document.createElement('td');
+            indexCell.classList.add('index');
+            indexCell.innerText = fileIndex++;
+            row.appendChild(indexCell);
+
+            const filenameCell = document.createElement('td');
+            filenameCell.classList.add('filename');
+            filenameCell.innerText = filename;
+            row.appendChild(filenameCell);
+
+            const inputCell = document.createElement('td');
+            inputCell.classList.add('image');
+            const inputImage = document.createElement('img');
+            inputImage.src = inputImageSrc;
+            inputCell.appendChild(inputImage);
+            row.appendChild(inputCell);
+
+            const outputCell = document.createElement('td');
+            outputCell.classList.add('output');
+            const outputImage = document.createElement('img');
+            outputImage.src = outputImageSrc;
+            outputCell.appendChild(outputImage);
+            row.appendChild(outputCell);
+
+            const timeCell = document.createElement('td');
+            timeCell.classList.add('time');
+            timeCell.innerText = processingTime;
+            row.appendChild(timeCell);
+
+            resultsBody.appendChild(row);
+            document.getElementById('results-table').style.display = 'table';
+        }
+
+        function clearResults() {
+            const resultsBody = document.getElementById('results-body');
+            while (resultsBody.firstChild) {
+                resultsBody.removeChild(resultsBody.firstChild);
+            }
+            document.getElementById('results-table').style.display = 'none';
+            document.getElementById('progress-bar').style.display = 'none';
+            document.getElementById('progress-info').innerText = '';
+            document.getElementById('download-button').style.display = 'none';
+            fileIndex = 1;
+        }
+
+        function initDropZone() {
+            const dropZone = document.getElementById('drop-zone');
+            const folderUpload = document.getElementById('folder-upload');
+
+            dropZone.addEventListener('click', () => {
+                folderUpload.click();
+            });
+
+            dropZone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dropZone.classList.remove('dragover');
+                const files = event.dataTransfer.files;
+                if (files.length > 0) {
+                    clearResults();
+                    document.getElementById('progress-bar').style.display = 'block';
+                    processFiles(files);
+                }
+            });
+
+            folderUpload.addEventListener('change', (event) => {
+                const files = event.target.files;
+                if (files.length > 0) {
+                    clearResults();
+                    document.getElementById('progress-bar').style.display = 'block';
+                    processFiles(files);
+                }
+            });
+        }
+
+        async function processFiles(files) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressInfo = document.getElementById('progress-info');
+            progressBar.value = 0;
+            progressBar.max = 100;
+            const totalFiles = files.length;
+            let totalTime = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const timeTaken = await runModel(files[i], totalFiles);
+                totalTime += timeTaken;
+                const progress = Math.round(((i + 1) / totalFiles) * 100);
+                progressBar.value = progress;
+                
+                const avgTimePerFile = totalTime / (i + 1);
+                const remainingFiles = totalFiles - (i + 1);
+                const estimatedRemainingTime = Math.round((avgTimePerFile * remainingFiles) / 1000);
+                
+                progressInfo.innerText = `Processed ${i + 1} of ${totalFiles} files. Estimated remaining time: ${estimatedRemainingTime} seconds.`;
+            }
+
+            document.getElementById('download-button').style.display = 'block';
+        }
+
+        document.getElementById('download-button').addEventListener('click', () => {
+            zip.generateAsync({ type: 'blob' }).then((content) => {
+                saveAs(content, 'predictions.zip');
+            });
+        });
+
+        async function loadExampleImages() {
+            const response = await fetch('example_images.json'); // Ensure this path is correct
+            const imageUrls = await response.json();
+            for (const url of imageUrls) {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const fileType = url.substring(url.lastIndexOf('.') + 1);
+                const fileName = `example.${fileType}`;
+                const file = new File([blob], fileName, { type: `image/${fileType}` });
+                await runModel(file);
+            }
+        }
+
+        loadModels().then(() => {
+            initDropZone();
+            loadExampleImages();
+        }).catch(error => {
+            console.error('Error loading models:', error);
+            document.getElementById('output').innerText = 'Error loading models: ' + error.message;
+        });
+    </script>
+</body>
+</html>

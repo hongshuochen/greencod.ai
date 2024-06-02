@@ -301,7 +301,7 @@
         }
 
         async function loadExampleImage() {
-            const response = await fetch('camouflage-visual-deception-methods.jpg'); // Replace with the actual path to your example image
+            const response = await fetch('images/camouflage-visual-deception-methods.jpg'); // Replace with the actual path to your example image
             const blob = await response.blob();
             const file = new File([blob], 'example.jpg', { type: 'image/jpeg' });
             runModel(file);
