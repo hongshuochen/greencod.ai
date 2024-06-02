@@ -442,8 +442,8 @@
             for (const url of imageUrls) {
                 const response = await fetch(url);
                 const blob = await response.blob();
+                const fileName = url.substring(url.lastIndexOf('/') + 1); // Extract the file name from the URL
                 const fileType = url.substring(url.lastIndexOf('.') + 1);
-                const fileName = `example.${fileType}`;
                 const file = new File([blob], fileName, { type: `image/${fileType}` });
                 await runModel(file);
             }
