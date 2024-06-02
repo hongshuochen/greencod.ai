@@ -178,8 +178,8 @@
         let concatSession2;
         let concatSession3;
         let fileIndex = 1;
-        const zip = new JSZip();
-        const predictionsFolder = zip.folder("predictions");
+        let zip = new JSZip();
+        let predictionsFolder = zip.folder("predictions");
 
         async function loadModels() {
             const start = performance.now();
@@ -366,6 +366,8 @@
             document.getElementById('progress-info').innerText = '';
             document.getElementById('download-button').style.display = 'none';
             fileIndex = 1;
+            zip = new JSZip();
+            predictionsFolder = zip.folder("predictions");
         }
 
         function initDropZone() {
