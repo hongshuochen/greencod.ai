@@ -91,17 +91,22 @@ nav a.github-icon img {
     text-align: center;
     background-color: #ffffff;
 }
+.dataset-section {
+    padding: 50px 20px;
+    text-align: center;
+    background-color: #f8f9fa;
+}
 .citation-section {
     padding: 50px 20px;
     text-align: center;
     background-color: #f8f9fa;
 }
-.abstract-section h2, .gif-section h2, .applications-section h2, .citation-section h2 {
+.abstract-section h2, .gif-section h2, .applications-section h2, .citation-section h2, .dataset-section h2 {
     font-size: 2rem;
     margin-bottom: 20px;
     padding-bottom: 20px;
 }
-.abstract-section p, .gif-section p, .applications-section p, .citation-section p {
+.abstract-section p, .gif-section p, .applications-section p, .citation-section p .dataset-section p {
     font-size: 1rem;
     margin-bottom: 30px;
 }
@@ -151,4 +156,5 @@ nav a.github-icon img {
     padding: 10px;
     border-radius: 5px;
     font-family: monospace;
+    text-align: left;
 }

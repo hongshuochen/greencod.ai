@@ -16,10 +16,10 @@
         <div>
             <a href="https://greencod.ai/">Home</a>
             <a href="/demo">Demo</a>
-            <a href="#">Dataset</a>
+            <a href="#dataset-section">Dataset</a>
             <a href="#">Blog</a>
             <a href="https://www.arxiv.org/abs/2405.16144">Paper</a>
-            <a href="#" class="github-icon"><img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub"></a>
+            <a href="https://github.com/hongshuochen/green-cod" class="github-icon"><img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub"></a>
         </div>
     </nav>
 
@@ -33,6 +33,17 @@
         </div>
     </section>
 
+    
+
+    <section class="gif-section">
+        <h2>GreenCOD Detection Results</h2>
+        <p>Check out these example results showing GreenCOD's performance.</p>
+        <div class="gif-container">
+            <img src="https://hongshuochen.com/GreenCOD/results_large_3s.gif" alt="GreenCOD detection result - large">
+            <img src="https://hongshuochen.com/GreenCOD/results_small_3s.gif" alt="GreenCOD detection result - small">
+        </div>
+    </section>
+    
     <section class="abstract-section">
         <h2>Abstract</h2>
         <p>
@@ -44,14 +55,27 @@
             paradigm opens avenues for further exploration in green, backpropagation-free model training.
         </p>
     </section>
-
-    <section class="gif-section">
-        <h2>GreenCOD Detection Results</h2>
-        <p>Check out these example results showing GreenCOD's performance.</p>
-        <div class="gif-container">
-            <img src="https://hongshuochen.com/GreenCOD/results_large_3s.gif" alt="GreenCOD detection result - large">
-            <img src="https://hongshuochen.com/GreenCOD/results_small_3s.gif" alt="GreenCOD detection result - small">
-        </div>
+    
+    <section class="dataset-section" id="dataset-section">
+        <h2>Dataset</h2>
+        <p>Training is performed on a dataset that combines the CAMO and COD10K datasets, totaling 4040 images. Testing is carried out on two datasets: COD10K and NC4K. The COD10K dataset contains 2026 images. The NC4K dataset is the largest dataset for testing, with 4121 images.</p>
+        <p>The links are from <a href="https://mhaiyang.github.io/CVPR2021_PFNet/index" target="_blank">PFNet</a> and <a href="https://github.com/JingZhang617/COD-Rank-Localize-and-Segment" target="_blank">COD-Rank-Localize-and-Segment</a>.</p>
+        <table class="table table-bordered">
+            <tbody>
+                <tr>
+                    <td>Training set</td>
+                    <td><a href="https://drive.google.com/file/d/1D9bf1KeeCJsxxri6d2qAC7z6O1X_fxpt/view" target="_blank">Google Drive</a></td>
+                </tr>
+                <tr>
+                    <td>COD10K Testing set</td>
+                    <td><a href="https://drive.google.com/file/d/1QEGnP9O7HbN_2tH999O3HRIsErIVYalx/view" target="_blank">Google Drive</a></td>
+                </tr>
+                <tr>
+                    <td>NC4K Testing set</td>
+                    <td><a href="https://drive.google.com/file/d/1kzpX_U3gbgO9MuwZIWTuRVpiB7V6yrAQ/view" target="_blank">Google Drive</a></td>
+                </tr>
+            </tbody>
+        </table>
     </section>
 
     <section class="applications-section">
@@ -72,21 +96,19 @@
             </div>
         </div>
     </section>
-    
 
     <section class="citation-section">
-        <h2>Citations</h2>
+        <h2>Citation</h2>
         <p>If you use GreenCOD in your research, please cite the following paper:</p>
         <div class="bibtex">
-            <pre><code>@misc{chen2024greencod,
+<pre><code>@misc{chen2024greencod,
   title={GreenCOD: A Green Camouflaged Object Detection Method}, 
   author={Hong-Shuo Chen and Yao Zhu and Suya You and Azad M. Madni and C. -C. Jay Kuo},
   year={2024},
   eprint={2405.16144},
   archivePrefix={arXiv},
   primaryClass={cs.CV}
-}
-            </code></pre>
+}</code></pre>
         </div>
     </section>
 
